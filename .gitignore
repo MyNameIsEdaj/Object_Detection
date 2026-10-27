@@ -1,0 +1,48 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# YOLO & ML training artifacts
+runs/
+*.pt
+*.onnx
+*.engine
+
+# Datasets and Archives
+dataset/
+datasets/
+*.zip
+*.tar.gz
+test_frame.jpg
+*.cache
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDEs & OS files
+.idea/
+.vscode/
+Thumbs.db
+[Dd]esktop.ini
+.DS_Store

@@ -1,11 +1,12 @@
 [project]
 name = "object-detection"
 version = "0.1.0"
-description = "Add your description here"
+description = "Real-time object detection using YOLO and ONNX Runtime"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "onnx>=1.23.2",
+    "onnxruntime>=1.31.1",
     "opencv-python>=5.0.0.93",
     "ultralytics>=8.4.190",
 ]
