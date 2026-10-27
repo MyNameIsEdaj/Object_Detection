@@ -1,7 +1,7 @@
 """
-Multi-Class Dataset Preparation & Merger Script
-Merges 5 individual datasets (marker, watch, can, water bottle, eye glasses)
-into a unified YOLO training dataset with proper class remapping.
+Multi-Class Dataset Preparation & Merger Script (Updated Batch)
+Merges marker, wristwatch, cans (beverage + food cans), water bottle, and eyeglasses
+into a clean, balanced 5-class YOLO dataset.
 """
 import zipfile
 import os
@@ -38,7 +38,7 @@ def main():
         }
     }
 
-    # Reset output directory for clean build
+    # Reset output directory
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
 
@@ -46,57 +46,62 @@ def main():
         os.makedirs(s["images"], exist_ok=True)
         os.makedirs(s["labels"], exist_ok=True)
 
-    # Configuration for each raw dataset:
-    # (zip_filename, class_mapping_dict, max_train_samples, max_valid_samples)
     dataset_configs = [
         {
             "name": "marker",
-            "files": ["Marker.v1i.yolov8.zip", ".marker.v1i.yolov8.zip"],
-            # Original class 0 -> Target class 0
-            "class_map": {0: 0},
-            "max_train": 300,
-            "max_valid": 60,
+            "files": [
+                ("Marker.v1i.yolov8.zip", {0: 0}),
+                (".marker.v1i.yolov8.zip", {0: 0}),
+            ],
+            "max_train": 350,
+            "max_valid": 80,
         },
         {
             "name": "watch",
-            "files": ["Watch.v1-watch.yolov8.zip"],
-            # Original class 0 -> Target class 1
-            "class_map": {0: 1},
-            "max_train": 250,
-            "max_valid": 60,
+            "files": [
+                ("Wristwatch.v3i.yolov8.zip", {0: 1}),
+                ("Watch.v1-watch.yolov8.zip", {0: 1}),
+            ],
+            "max_train": 350,
+            "max_valid": 80,
         },
         {
             "name": "can",
-            "files": ["Cans.v1i.yolov8.zip"],
-            # Original class 0 ('metal-can') -> Target class 2
-            "class_map": {0: 2},
-            "max_train": 250,
-            "max_valid": 60,
+            "files": [
+                # Clean beverage cans (upright soda cans on tables & in hands)
+                ("Cans_beverage.v1i.yolov8.zip", {0: 2}),
+                # A balanced sample of food cans (Argentina, Mega Green, Mega Red)
+                ("Ph Canned Goods.v2i.yolov8.zip", {0: 2, 1: 2, 2: 2}),
+            ],
+            "max_train": 230,
+            "max_valid": 50,
         },
         {
             "name": "water_bottle",
-            "files": ["water bottle.v1i.yolov8.zip"],
-            # In water bottle dataset: 0: leaf, 1: paper, 2: water, 3: waterbottle
-            # We only map class 3 -> Target class 3 ('water bottle')
-            "class_map": {3: 3},
-            "max_train": 250,
-            "max_valid": 60,
+            "files": [
+                # In water bottle: class 3 is waterbottle
+                ("water bottle.v1i.yolov8.zip", {3: 3}),
+            ],
+            "max_train": 350,
+            "max_valid": 80,
         },
         {
             "name": "eye_glasses",
-            "files": ["Eye glasses.v1i.yolov8.zip"],
-            # In eye glasses dataset: 0: goggles, 1: no_goggles, 2: spec
-            # Map 0 and 2 -> Target class 4 ('eye glasses')
-            "class_map": {0: 4, 2: 4},
-            "max_train": 250,
-            "max_valid": 60,
+            "files": [
+                # New clean eyeglasses dataset
+                ("eyeglasses.v2i.yolov8.zip", {0: 4}),
+                # Old glasses (0: goggles, 2: spec)
+                ("Eye glasses.v1i.yolov8.zip", {0: 4, 2: 4}),
+            ],
+            "max_train": 350,
+            "max_valid": 80,
         },
     ]
 
     stats = {cls_name: {"train": 0, "valid": 0} for cls_name in class_names}
 
     print("=" * 65)
-    print("      MERGING 5 DATASETS INTO UNIFIED YOLO FORMAT")
+    print("      MERGING 5 UPDATED DATASETS INTO UNIFIED YOLO FORMAT")
     print("=" * 65)
     print("Target Classes:")
     for idx, name in enumerate(class_names):
@@ -105,23 +110,21 @@ def main():
 
     for cfg in dataset_configs:
         dataset_name = cfg["name"]
-        class_map = cfg["class_map"]
         max_train = cfg["max_train"]
         max_valid = cfg["max_valid"]
 
         counts = {"train": 0, "valid": 0}
         limits = {"train": max_train, "valid": max_valid}
 
-        print(f"\nProcessing object category: [{dataset_name.upper()}]...")
+        print(f"\nProcessing category: [{dataset_name.upper()}]...")
 
-        for zip_name in cfg["files"]:
+        for zip_name, class_map in cfg["files"]:
             zip_path = os.path.join(raw_zips_dir, zip_name)
             if not os.path.exists(zip_path):
                 print(f"  Warning: File not found: {zip_path}")
                 continue
 
             with zipfile.ZipFile(zip_path, 'r') as z:
-                # Find all label files
                 label_files = [f for f in z.namelist() if f.endswith('.txt') and not os.path.basename(f).startswith('README')]
 
                 for lbl_file in label_files:
@@ -137,7 +140,6 @@ def main():
                     if not split_type or counts[split_type] >= limits[split_type]:
                         continue
 
-                    # Read label lines and check if any class matches our class_map
                     content = z.read(lbl_file).decode('utf-8').strip().splitlines()
                     remapped_lines = []
 
@@ -156,14 +158,11 @@ def main():
                             remapped_lines.append(remapped_line)
                             stats[class_names[target_cls]][split_type] += 1
 
-                    # Only save image & label if at least one valid object was found
                     if not remapped_lines:
                         continue
 
-                    base_no_ext = os.path.splitext(os.path.basename(lbl_file))[0]
                     prefix = f"{dataset_name}_{counts[split_type]:04d}"
 
-                    # Find corresponding image in zip
                     img_candidates = [
                         lbl_file.replace('/labels/', '/images/').replace('.txt', ext)
                         for ext in ['.jpg', '.jpeg', '.png', '.JPG', '.PNG']
@@ -181,12 +180,10 @@ def main():
                     out_img_name = f"{prefix}{img_ext}"
                     out_lbl_name = f"{prefix}.txt"
 
-                    # Write remapped label file
                     out_lbl_path = os.path.join(splits[split_type]["labels"], out_lbl_name)
                     with open(out_lbl_path, "w", encoding="utf-8") as lf:
                         lf.write("\n".join(remapped_lines) + "\n")
 
-                    # Copy image file
                     out_img_path = os.path.join(splits[split_type]["images"], out_img_name)
                     with z.open(found_img) as src, open(out_img_path, "wb") as dst:
                         shutil.copyfileobj(src, dst)
@@ -195,8 +192,8 @@ def main():
 
         print(f"  Extracted for [{dataset_name}]: {counts['train']} train, {counts['valid']} valid")
 
-    # Create the unified data.yaml
-    yaml_content = f"""# 5-Object Detection Dataset Configuration
+    # Write data.yaml for Google Colab
+    yaml_content = f"""# 5-Object Detection Dataset Configuration (Updated)
 path: /content/dataset
 train: train/images
 val: valid/images
@@ -217,7 +214,7 @@ names:
         f.write(yaml_content)
 
     print("\n" + "=" * 65)
-    print("      FINAL DATASET SUMMARY (5 CLASSES)")
+    print("      FINAL DATASET SUMMARY (5 CLASSES - UPDATED)")
     print("=" * 65)
     total_train = 0
     total_valid = 0
