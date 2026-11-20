@@ -1,0 +1,8 @@
+Comic pop GUI - backup taken 2026-11-21, before the Candy pop theme was added.
+
+To go back to exactly this version:
+  1. Close the app.
+  2. Copy every .py file from this folder into the project's gui\ folder,
+     replacing the files there. (Extra files added later can stay; this
+     version doesn't use them.)
+  3. Run:  uv run python main.py
