@@ -21,6 +21,7 @@ datasets/
 *.zip
 *.tar.gz
 test_frame.jpg
+snapshots/
 *.cache
 
 # Distribution / packaging

@@ -11,6 +11,12 @@ dependencies = [
     "onnxruntime-directml>=1.24.4",
     "onnx>=1.23.2",
     "opencv-python>=5.0.0.93",
+    "pyside6>=6.8",  # GUI
     # Only needed for training/exporting locally (training runs in Colab).
     "ultralytics>=8.4.190",
 ]
+
+[tool.uv]
+# Use the signed python.org install instead of uv's own downloaded Python:
+# Windows Smart App Control blocks the unsigned one.
+python-preference = "only-system"

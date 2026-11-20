@@ -14,6 +14,7 @@ from .config import (
 )
 from .detector import Detection, YoloOnnxDetector
 from .drawing import color_for, draw_detections
+from .live import LiveDetector
 from .tracker import ObjectTracker
 
 __all__ = [
@@ -22,6 +23,7 @@ __all__ = [
     "Detection",
     "YoloOnnxDetector",
     "ObjectTracker",
+    "LiveDetector",
     "draw_detections",
     "color_for",
     "PROJECT_ROOT",

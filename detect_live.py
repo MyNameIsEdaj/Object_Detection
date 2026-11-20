@@ -17,7 +17,7 @@ import time
 
 import cv2
 
-from core import CameraManager, DEFAULT_MODEL_PATH, ObjectTracker, YoloOnnxDetector, draw_detections
+from core import CameraManager, DEFAULT_MODEL_PATH, LiveDetector, YoloOnnxDetector, draw_detections
 
 WINDOW_NAME = "Multi-Object Detection"
 MAX_READ_FAILURES = 20
@@ -54,7 +54,7 @@ def main(argv=None):
         print("Error: could not open any camera. Close the Windows Camera app / Zoom and retry.")
         return 1
 
-    tracker = ObjectTracker(alpha=0.6, max_missed_frames=5)
+    live = LiveDetector(detector)
 
     print("=" * 65)
     print("      LIVE MULTI-OBJECT DETECTION")
@@ -87,7 +87,7 @@ def main(argv=None):
             if dt > 0:  # smoothed FPS so the number doesn't flicker
                 fps = 0.9 * fps + 0.1 * (1.0 / dt) if fps else 1.0 / dt
 
-            detections = tracker.update(detector.detect(frame))
+            detections = live.process(frame)
             draw_detections(frame, detections)
             draw_hud(frame, fps, detector.device_label, camera.index, detector.conf_threshold)
             cv2.imshow(WINDOW_NAME, frame)
@@ -100,7 +100,7 @@ def main(argv=None):
             if key in (ord("c"), ord("C")):
                 print("Switching camera...")
                 if camera.switch_next():
-                    tracker.reset()
+                    live.reset()
                     print(f"Now using camera index {camera.index}")
                 else:
                     print("No other camera found; staying on the current one.")
